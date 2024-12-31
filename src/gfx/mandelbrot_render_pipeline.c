@@ -17,15 +17,15 @@ typedef struct {
 } push_constants_t;
 
 static vec2s mandelbrot_vertices[4] = {
-    {{ -1.0f, 1.0f }},
+    {{ 1.0f, 1.0f }},
     {{ 1.0f, -1.0f }},
     {{ -1.0f, -1.0f }},
-    {{ 1.0f, 1.0f }},
+    {{ -1.0f, 1.0f }},
 };
 
 static uint16_t mandelbrot_indices[6] = {
-    0, 1, 2,
-    2, 0, 3
+    0, 1, 3,
+    1, 2, 3
 };
 
 static pipeline_t pipeline;
