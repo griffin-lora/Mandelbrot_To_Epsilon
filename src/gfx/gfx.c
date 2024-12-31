@@ -465,11 +465,6 @@ static result_t init_vk_core(void) {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
             .features = {
                 .samplerAnisotropy = VK_TRUE
-            },
-            .pNext = &(VkPhysicalDeviceMeshShaderFeaturesEXT) {
-                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
-                .taskShader = true,
-                .meshShader = true
             }
         },
         .queueCreateInfoCount = 1,

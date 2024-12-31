@@ -30,8 +30,8 @@ static uint16_t mandelbrot_indices[6] = {
 };
 
 static pipeline_t pipeline;
-static VkDescriptorSetLayout descriptor_set_layout;
-static VkDescriptorSet descriptor_set;
+// static VkDescriptorSetLayout descriptor_set_layout;
+// static VkDescriptorSet descriptor_set;
 
 static VkBuffer vertex_staging_buffer;
 static VmaAllocation vertex_staging_buffer_allocation;
@@ -45,6 +45,7 @@ static VmaAllocation index_buffer_allocation;
 
 result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence command_fence, VkDescriptorPool descriptor_pool, const VkPhysicalDeviceProperties* physical_device_properties) {
     (void) physical_device_properties;
+    (void) descriptor_pool;
 
     result_t result;
     
@@ -57,21 +58,21 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result;
     }
 
-    if (vkCreateDescriptorSetLayout(device, &(VkDescriptorSetLayoutCreateInfo) {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 0
-    }, NULL, &descriptor_set_layout) != VK_SUCCESS) {
-        return result_descriptor_set_layout_create_failure;
-    }
+    // if (vkCreateDescriptorSetLayout(device, &(VkDescriptorSetLayoutCreateInfo) {
+    //     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+    //     .bindingCount = 0
+    // }, NULL, &descriptor_set_layout) != VK_SUCCESS) {
+    //     return result_descriptor_set_layout_create_failure;
+    // }
 
-    if (vkAllocateDescriptorSets(device, &(VkDescriptorSetAllocateInfo) {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = descriptor_pool,
-        .descriptorSetCount = 0,
-        .pSetLayouts = &descriptor_set_layout
-    }, &descriptor_set) != VK_SUCCESS) {
-        return result_descriptor_sets_allocate_failure;
-    }
+    // if (vkAllocateDescriptorSets(device, &(VkDescriptorSetAllocateInfo) {
+    //     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+    //     .descriptorPool = descriptor_pool,
+    //     .descriptorSetCount = 0,
+    //     .pSetLayouts = &descriptor_set_layout
+    // }, &descriptor_set) != VK_SUCCESS) {
+    //     return result_descriptor_sets_allocate_failure;
+    // }
     
     // vkUpdateDescriptorSets(device, 1, (VkWriteDescriptorSet[1]) {
     //     {
@@ -86,10 +87,7 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
     
     if (vkCreatePipelineLayout(device, &(VkPipelineLayoutCreateInfo) {
         DEFAULT_VK_PIPELINE_LAYOUT,
-        .setLayoutCount = 1,
-        .pSetLayouts = (VkDescriptorSetLayout[1]) {
-            descriptor_set_layout
-        },
+        .setLayoutCount = 0,
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &(VkPushConstantRange) {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
@@ -222,14 +220,13 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
 }
 
 result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer) {
-
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
 
     push_constants_t push_constants;
     push_constants.aspect = 16.0f/9.0f;
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
 
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_set }, 0, NULL);
+    // vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_set }, 0, NULL);
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, (VkDeviceSize[1]) { 0 });
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
@@ -242,5 +239,5 @@ void term_mandelbrot_render_pipeline() {
     vmaDestroyBuffer(allocator, index_buffer, index_buffer_allocation);
     vmaDestroyBuffer(allocator, vertex_buffer, vertex_buffer_allocation);
     destroy_pipeline(&pipeline);
-    vkDestroyDescriptorSetLayout(device, descriptor_set_layout, NULL);
+    // vkDestroyDescriptorSetLayout(device, descriptor_set_layout, NULL);
 }
