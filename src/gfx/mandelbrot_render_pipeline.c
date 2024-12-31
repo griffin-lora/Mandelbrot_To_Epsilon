@@ -23,7 +23,6 @@ static vec2s mandelbrot_vertices[4] = {
     {{ 1.0f, 1.0f }},
 };
 
-static const size_t num_mandelbrot_vertices = 6;
 static uint16_t mandelbrot_indices[6] = {
     0, 1, 2,
     2, 0, 3
@@ -131,7 +130,7 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
                 {
                     .binding = 0,
                     .location = 0,
-                    .format = VK_FORMAT_R32G32B32_SFLOAT,
+                    .format = VK_FORMAT_R32G32_SFLOAT,
                     .offset = 0
                 }
             }
@@ -159,7 +158,7 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
 
     if (vmaCreateBuffer(allocator, &(VkBufferCreateInfo) {
         DEFAULT_VK_INDEX_BUFFER,
-        .size = sizeof(mandelbrot_vertices)
+        .size = sizeof(mandelbrot_indices)
     }, &device_allocation_create_info, &index_buffer, &index_buffer_allocation, NULL) != VK_SUCCESS) {
         return result_buffer_create_failure;
     }
@@ -230,7 +229,9 @@ result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer) {
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, (VkDeviceSize[1]) { 0 });
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexed(command_buffer, num_mandelbrot_vertices, 1, 0, 0, 0);
+    // vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+    vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
 
     return result_success;
 }
