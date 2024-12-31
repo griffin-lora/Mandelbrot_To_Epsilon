@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "camera.h"
 #include "chrono.h"
 #include "gfx/default.h"
 #include "gfx/mandelbrot_render_pipeline.h"
@@ -758,7 +759,8 @@ result_t draw_gfx(void) {
         }
     }, VK_SUBPASS_CONTENTS_INLINE);
 
-    if ((result = draw_mandelbrot_render_pipeline(command_buffer)) != result_success) {
+    mat3s affine_map = get_affine_map();
+    if ((result = draw_mandelbrot_render_pipeline(command_buffer, &affine_map)) != result_success) {
         return result;
     }
 
@@ -804,7 +806,8 @@ result_t draw_gfx(void) {
 
     frame_index += 1;
     frame_index %= NUM_FRAMES_IN_FLIGHT;
-    printf("Frame took %ldμs\n", get_current_microseconds() - start);
+    (void) start;
+    // printf("Frame took %ldμs\n", get_current_microseconds() - start);
 
     return result_success;
 }

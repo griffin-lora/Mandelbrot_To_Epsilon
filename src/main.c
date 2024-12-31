@@ -1,3 +1,4 @@
+#include "camera.h"
 #include "chrono.h"
 #include "gfx/gfx.h"
 #include "result.h"
@@ -9,6 +10,8 @@ int main() {
         print_result_error(result);
         return 1;
     }
+    
+    init_camera();
 
     microseconds_t program_start = get_current_microseconds();
 
@@ -16,6 +19,7 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         microseconds_t start = get_current_microseconds() - program_start;
         glfwPollEvents();
+        update_camera(delta);
 
         if ((result = draw_gfx()) != result_success) {
             print_result_error(result);

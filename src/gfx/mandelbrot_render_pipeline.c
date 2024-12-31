@@ -221,20 +221,12 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
     return result_success;
 }
 
-result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer) {
+result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, const mat3s* affine_map) {
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
-
-    int width;
-    int height;
-    glfwGetFramebufferSize(window, &width, &height);
-    
-    mat3s aspect_map = glms_scale2d_make((vec2s) {{ (float) width / (float) height, 1.0f }});
-
-    mat3s affine_map = aspect_map;
 
     push_constants_t push_constants;
     for (size_t i = 0; i < 3; i++) {
-        push_constants.affine_map[i].col = affine_map.col[i];
+        push_constants.affine_map[i].col = affine_map->col[i];
     }
 
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
