@@ -5,9 +5,10 @@
 #include <cglm/struct/mat3.h>
 #include <cglm/struct/affine2d.h>
 #include <cglm/util.h>
+#include <stdio.h>
 
 static bool in_movement_mode;
-static vec2s movement_mode_cursor_position = {{ 0.0f, 0.0f }};
+static vec2s movement_mode_last_cursor_position = {{ 0.0f, 0.0f }};
 
 static float target_scale_factor = 1.0f;
 static vec2s target_offset = {{ 0.0f, 0.0f }};
@@ -46,8 +47,8 @@ static vec2s get_offset(void) {
         }
 
         in_movement_mode = true;
-        movement_mode_cursor_position = cursor_position;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        movement_mode_last_cursor_position = cursor_position;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         return (vec2s) {{ 0.0f, 0.0f }};
     }
 
@@ -61,13 +62,10 @@ static vec2s get_offset(void) {
     glfwGetCursorPos(window, &cursor_x, &cursor_y);
 
     const vec2s cursor_position = {{ (float)cursor_x, (float)cursor_y }};
-    if (is_cursor_position_out_of_bounds(cursor_position)) {
-        return (vec2s) {{ 0.0f, 0.0f }};
-    }
 
-    glfwSetCursorPos(window, movement_mode_cursor_position.x, movement_mode_cursor_position.y);
-
-    return glms_vec2_scale(glms_vec2_sub(movement_mode_cursor_position, cursor_position), (1.0f / 5000.0f));
+    vec2s offset = glms_vec2_scale(glms_vec2_sub(movement_mode_last_cursor_position, cursor_position), (1.0f / 500.0f));
+    movement_mode_last_cursor_position = cursor_position;
+    return offset;
 }
 
 void init_camera(void) {
