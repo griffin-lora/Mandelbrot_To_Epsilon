@@ -9,11 +9,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cglm/struct/affine2d.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
 typedef struct {
-    float aspect;
+    struct {
+        alignas(16) vec3s col;
+    } affine_map[3];
 } push_constants_t;
 
 static vec2s mandelbrot_vertices[4] = {
@@ -221,18 +224,24 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
 result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer) {
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
 
-    push_constants_t push_constants;
     int width;
     int height;
     glfwGetFramebufferSize(window, &width, &height);
-    push_constants.aspect = (float) width / (float) height;
+    
+    mat3s aspect_map = glms_scale2d_make((vec2s) {{ (float) width / (float) height, 1.0f }});
+
+    mat3s affine_map = aspect_map;
+
+    push_constants_t push_constants;
+    for (size_t i = 0; i < 3; i++) {
+        push_constants.affine_map[i].col = affine_map.col[i];
+    }
+
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
 
     // vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_set }, 0, NULL);
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, (VkDeviceSize[1]) { 0 });
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
-    // vkCmdDraw(command_buffer, 3, 1, 0, 0);
 
     vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
 
