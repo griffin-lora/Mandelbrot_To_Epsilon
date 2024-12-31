@@ -34,7 +34,7 @@ const vec3 colors[16] = vec3[16](
 void main() {
     vec2 c = fragment_position;
     vec2 z = vec2(0.0, 0.0);
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 250; i++) {
         z = square(z) + c;
         if (square_modulus(z) >= 4.0) {
             vec3 color = colors[i % 16];

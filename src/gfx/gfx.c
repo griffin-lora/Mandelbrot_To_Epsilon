@@ -698,7 +698,7 @@ static void term_glfw_core(void) {
     glfwTerminate();
 }
 
-result_t draw_gfx(void) {
+result_t draw_gfx(float delta) {
     microseconds_t start = get_current_microseconds();
 
     result_t result;
@@ -759,7 +759,7 @@ result_t draw_gfx(void) {
         }
     }, VK_SUBPASS_CONTENTS_INLINE);
 
-    mat3s affine_map = get_affine_map();
+    mat3s affine_map = get_affine_map(delta);
     if ((result = draw_mandelbrot_render_pipeline(command_buffer, &affine_map)) != result_success) {
         return result;
     }

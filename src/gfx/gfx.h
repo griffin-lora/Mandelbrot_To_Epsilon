@@ -15,5 +15,5 @@ extern VkSampleCountFlagBits render_multisample_flags;
 extern VkRenderPass frame_render_pass;
 
 result_t init_gfx(void);
-result_t draw_gfx(void);
+result_t draw_gfx(float delta);
 void term_gfx(void);
