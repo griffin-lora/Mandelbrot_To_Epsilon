@@ -222,7 +222,10 @@ result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer) {
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
 
     push_constants_t push_constants;
-    push_constants.aspect = 640.0f/480.0f;
+    int width;
+    int height;
+    glfwGetFramebufferSize(window, &width, &height);
+    push_constants.aspect = (float) width / (float) height;
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
 
     // vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_set }, 0, NULL);
