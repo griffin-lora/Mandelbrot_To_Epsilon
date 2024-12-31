@@ -15,5 +15,5 @@ void main() {
         aspect, 0.0,
         0.0, 1.0
     );
-    fragment_position = aspect_map*0.5*(vertex_position + vec2(1.0, 1.0));
+    fragment_position = aspect_map * vertex_position;
 }
