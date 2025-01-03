@@ -12,11 +12,7 @@
 \rfoot{\thepage}
 \setlength{\headheight}{15pt}
 
-\DeclareMathOperator{\obj}{Obj}
-\DeclareMathOperator{\arw}{Arw}
-\DeclareMathOperator{\dom}{Dom}
-\DeclareMathOperator{\cod}{Cod}
-\DeclareMathOperator{\id}{Id}
+\DeclareMathOperator{\est}{Est}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
@@ -33,12 +29,16 @@
 \begin{document}
 \begin{flushleft}
 
+\begin{definition}[Estimate Function]
+    Let $S \subseteq \mathbb{C}$, $f\colon S\to\mathbb{R}$, and $\varepsilon > 0$, then an \textit{estimate function} of $f$ is a function $\est_\varepsilon f\colon S\to\mathbb{R}$ where for all $z \in S$ that $\left|\est_\varepsilon f(z) - f(z)\right| < \varepsilon$.
+\end{definition}
+
 \begin{definition}[Minimum Distance Function]
-    Let $S \subseteq \mathbb{C}$, then $\mu_\varepsilon\colon\mathbb{C}\to\mathbb{R}$ as $\mu(z) = \inf\{ |w - z| : w \in S \}$ is the \textit{minimum distance function} for S
+    Let $S \subseteq \mathbb{C}$, then $\mu\colon\mathbb{C}\to\mathbb{R}$ as $\mu(c) = \inf\{ |z - c| : z \in S \}$ is the \textit{minimum distance function} for S
 \end{definition}
 
 \begin{definition}[Distance Estimate Function]
-    Let $S \subseteq \mathbb{C}$ and $\mu$ be its minimum distance function, then $\mu_\varepsilon\colon\mathbb{C}\to\mathbb{R}$ where $\varepsilon > 0$ is a \textit{distance estimate function} for $S$ iff $\forall c \in \mathbb{C}$ that if $\forall z \in \mathbb{C}$ where $|z - c| < \varepsilon$ then $|\mu_\varepsilon(z) - \mu(z)| < \varepsilon$.
+    If $\mu$ is a minimum distance function then $\est_\varepsilon\mu$ is a \textit{distance estimate function} for $S$.
 \end{definition}
 
 \begin{lemma}
