@@ -12,8 +12,6 @@
 \rfoot{\thepage}
 \setlength{\headheight}{15pt}
 
-\DeclareMathOperator{\est}{Est}
-
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
 
@@ -29,16 +27,18 @@
 \begin{document}
 \begin{flushleft}
 
-\begin{definition}[Estimate Function]
-    Let $S \subseteq \mathbb{C}$, $f\colon S\to\mathbb{R}$, and $\varepsilon > 0$, then an \textit{estimate function} of $f$ is a function $\est_\varepsilon f\colon S\to\mathbb{R}$ where for all $z \in S$ that $\left|\est_\varepsilon f(z) - f(z)\right| < \varepsilon$.
+
+    
+\begin{definition}[Epsilon Function]
+    Let $S \subseteq \mathbb{C}$, $f\colon S\to\mathbb{R}$, and $\varepsilon > 0$, then an \textit{estimate function} of $f$ is a function $f_\varepsilon\colon S\to\mathbb{R}$ where for all $z \in S$ that $\left|f_\varepsilon(z) - f(z)\right| < \varepsilon$.
 \end{definition}
 
 \begin{definition}[Minimum Distance Function]
     Let $S \subseteq \mathbb{C}$, then $\mu\colon\mathbb{C}\to\mathbb{R}$ as $\mu(c) = \inf\{ |z - c| : z \in S \}$ is the \textit{minimum distance function} for S
 \end{definition}
 
-\begin{definition}[Distance Estimate Function]
-    If $\mu$ is a minimum distance function then $\est_\varepsilon\mu$ is a \textit{distance estimate function} for $S$.
+\begin{definition}[Distance Epsilon/Estimate Function]
+    If $\mu$ is a minimum distance function for $S$ then $\mu_\varepsilon$ is a \textit{distance epsilon function} or \textit{distance estimate function} for $S$.
 \end{definition}
 
 \begin{lemma}
