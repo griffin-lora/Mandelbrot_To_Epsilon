@@ -1,0 +1,68 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\everymath{\displaystyle}
+\rfoot{\thepage}
+\setlength{\headheight}{15pt}
+
+\DeclareMathOperator{\obj}{Obj}
+\DeclareMathOperator{\arw}{Arw}
+\DeclareMathOperator{\dom}{Dom}
+\DeclareMathOperator{\cod}{Cod}
+\DeclareMathOperator{\id}{Id}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+
+\theoremstyle{definition}
+\newtheorem{lemma}{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{example}{Example}
+
+\begin{document}
+\begin{flushleft}
+
+\begin{definition}[Minimum Distance Function]
+    Let $S \subseteq \mathbb{C}$, then $\mu_\varepsilon\colon\mathbb{C}\to\mathbb{R}$ as $\mu(z) = \inf\{ |w - z| : w \in S \}$ is the \textit{minimum distance function} for S
+\end{definition}
+
+\begin{definition}[Distance Estimate Function]
+    Let $S \subseteq \mathbb{C}$ and $\mu$ be its minimum distance function, then $\mu_\varepsilon\colon\mathbb{C}\to\mathbb{R}$ where $\varepsilon > 0$ is a \textit{distance estimate function} for $S$ iff $\forall c \in \mathbb{C}$ that if $\forall z \in \mathbb{C}$ where $|z - c| < \varepsilon$ then $|\mu_\varepsilon(z) - \mu(z)| < \varepsilon$.
+\end{definition}
+
+\begin{lemma}
+    $\mu_\varepsilon(c) \geq 0$
+\end{lemma}
+
+\begin{lemma}
+    If $\mu_\varepsilon(c) = 0$, then there exists some $z \in \mathbb{C}$ where $|z - c| < \varepsilon$ such that $z \in S$.
+\end{lemma}
+\begin{proof}
+    First consider that
+    \begin{align*}
+        |\mu_\varepsilon(c) - \mu(c)| = |\mu(c)| = \mu(c) < \varepsilon
+    \end{align*}
+    Now consider $z \in S$ such that $|z - c| = \mu(c)$, then $|z - c| = \mu(c) < \varepsilon$.
+\end{proof}
+
+\begin{theorem}
+    If $\mu_\varepsilon(c) < \varepsilon$, then there exists some $z \in \mathbb{C}$ where $|z - c| < \varepsilon$ such that $z \in S$.
+\end{theorem}
+
+% \begin{definition}[Mandelbrot Set]
+%     Let $f_c\colon\mathbb{C}\to\mathbb{C}$ as $f_c(z) = z^2 + c$ and let $f_c^n$ denote $n$ iterations of $f_c$, then the Mandelbrot set $\mathcal{M} = \{ c \in \mathbb{C} : \lim_{n\to\infty} f_c^n(0) \text{ converges} \}$
+% \end{definition}
+
+\end{flushleft}
+\end{document}
