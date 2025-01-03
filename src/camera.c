@@ -79,8 +79,10 @@ void update_camera(void) {
 mat3s get_affine_map(float delta) {
     (void) delta;
 
-    current_scale_factor = glm_lerp(current_scale_factor, target_scale_factor, 0.2f);
-    current_offset = glms_vec2_lerp(current_offset, target_offset, 0.2f);
+    float lerp_time = 24.0f * delta;
+    if (lerp_time > 1.0f) { lerp_time = 1.0f; }
+    current_scale_factor = glm_lerp(current_scale_factor, target_scale_factor, lerp_time);
+    current_offset = glms_vec2_lerp(current_offset, target_offset, lerp_time);
 
     mat3s scale_affine_map = glms_scale2d_make((vec2s) {{ current_scale_factor, current_scale_factor }});
     mat3s translate_affine_map = glms_translate2d_make(current_offset);

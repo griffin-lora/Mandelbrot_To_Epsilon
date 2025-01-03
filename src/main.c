@@ -3,6 +3,7 @@
 #include "gfx/gfx.h"
 #include "result.h"
 #include <GLFW/glfw3.h>
+#include <stdio.h>
 
 int main() {
     result_t result;
@@ -38,6 +39,8 @@ int main() {
         end = get_current_microseconds() - program_start;
         microseconds_t new_delta_microseconds = end - start;
         delta = (float) new_delta_microseconds/1000000.0f;
+
+        printf("FPS: %f\n", 1.0f/delta);
     }
 
     (void) delta;
