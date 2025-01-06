@@ -1,0 +1,55 @@
+#version 460
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, rgba8) writeonly uniform image2D mandelbrot_color_image;
+// layout(push_constant, std430) uniform push_constants_t {
+//     mat3 affine_map;
+// };
+
+vec2 square(vec2 z) {
+    return vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y);
+}
+
+float square_modulus(vec2 z) {
+    return z.x*z.x + z.y*z.y;
+}
+
+const vec3 colors[16] = vec3[16](
+    vec3(0.258824, 0.117647, 0.058824),
+    vec3(0.098039, 0.027451, 0.101961),
+    vec3(0.035294, 0.003922, 0.184314),
+    vec3(0.015686, 0.015686, 0.286275),
+    vec3(0.000000, 0.027451, 0.392157),
+    vec3(0.047059, 0.172549, 0.541176),
+    vec3(0.094118, 0.321569, 0.694118),
+    vec3(0.223529, 0.490196, 0.819608),
+    vec3(0.525490, 0.709804, 0.898039),
+    vec3(0.827451, 0.925490, 0.972549),
+    vec3(0.945098, 0.913725, 0.749020),
+    vec3(0.972549, 0.788235, 0.372549),
+    vec3(1.000000, 0.666667, 0.000000),
+    vec3(0.800000, 0.501961, 0.000000),
+    vec3(0.600000, 0.341176, 0.000000),
+    vec3(0.415686, 0.203922, 0.011765)
+);
+
+vec4 get_color(vec2 c) {
+    vec2 z = vec2(0.0, 0.0);
+    for (int i = 0; i < 250; i++) {
+        z = square(z) + c;
+        if (square_modulus(z) >= 4.0) {
+            vec3 color = colors[i % 16];
+            return vec4(color, 1.0);
+        }
+    }
+    
+    return vec4(0.0, 0.0, 0.0, 1.0);
+}
+
+void main() {
+    vec2 screen_position = 2.0*vec2(gl_GlobalInvocationID) / vec2(imageSize(mandelbrot_color_image)) - vec2(1.0, 1.0);
+    vec2 c = (/*affine_map * */vec3(screen_position, 1.0)).xy;
+    
+    imageStore(mandelbrot_color_image, ivec2(gl_GlobalInvocationID), get_color(c));
+}

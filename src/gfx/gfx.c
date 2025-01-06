@@ -2,6 +2,8 @@
 #include "camera.h"
 #include "chrono.h"
 #include "gfx/default.h"
+#include "gfx/gfx_util.h"
+#include "gfx/mandelbrot_compute_pipeline.h"
 #include "gfx/mandelbrot_render_pipeline.h"
 #include "result.h"
 #include "util.h"
@@ -14,7 +16,7 @@
 #include <vulkan/vulkan_core.h>
 
 #define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+#define WINDOW_HEIGHT 640
 
 #define NUM_FRAMES_IN_FLIGHT 2
 
@@ -627,11 +629,15 @@ static result_t init_vk_core(void) {
 
     if (vkCreateDescriptorPool(device, &(VkDescriptorPoolCreateInfo) {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .poolSizeCount = 1,
-        .pPoolSizes = (VkDescriptorPoolSize[1]) {
+        .poolSizeCount = 2,
+        .pPoolSizes = (VkDescriptorPoolSize[2]) {
+            {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                .descriptorCount = 5
+            },
             {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1
+                .descriptorCount = 5
             }
         },
         .maxSets = 1
@@ -639,7 +645,23 @@ static result_t init_vk_core(void) {
         return result_descriptor_pool_create_failure;
     }
 
+    if ((result = init_mandelbrot_compute_pipeline(generic_descriptor_pool)) != result_success) {
+        return result;
+    }
+
     if ((result = init_mandelbrot_render_pipeline(generic_command_buffer, generic_command_fence, generic_descriptor_pool, &physical_device_properties)) != result_success) {
+        return result;
+    }
+
+    if ((result = record_mandelbrot_compute_pipeline(generic_command_buffer)) != result_success) {
+        return result;
+    }
+    microseconds_t start = get_current_microseconds();
+    if ((result = submit_and_wait(generic_command_buffer, generic_command_fence)) != result_success) {
+        return result;
+    }
+    printf("Mandelbrot generation %ldμs\n", get_current_microseconds() - start);
+    if ((result = reset_command_processing(generic_command_buffer, generic_command_fence)) != result_success) {
         return result;
     }
 
@@ -649,6 +671,7 @@ static result_t init_vk_core(void) {
 static void term_vk_core(void) {
     vkDeviceWaitIdle(device);
     term_mandelbrot_render_pipeline();
+    term_mandelbrot_compute_pipeline();
 
     vkDestroyDescriptorPool(device, generic_descriptor_pool, NULL);
 
