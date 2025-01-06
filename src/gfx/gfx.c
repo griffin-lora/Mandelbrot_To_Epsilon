@@ -633,11 +633,11 @@ static result_t init_vk_core(void) {
         .pPoolSizes = (VkDescriptorPoolSize[2]) {
             {
                 .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                .descriptorCount = 5
+                .descriptorCount = 1
             },
             {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 5
+                .descriptorCount = 6
             }
         },
         .maxSets = 1
