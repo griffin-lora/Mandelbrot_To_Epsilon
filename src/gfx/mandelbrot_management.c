@@ -47,13 +47,6 @@ static result_t create_mandelbrot_image(size_t frame_index, uint32_t width, uint
         return result_image_view_create_failure;
     }
 
-    if (vkCreateFence(device, &(VkFenceCreateInfo) {
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .flags = VK_FENCE_CREATE_SIGNALED_BIT
-    }, NULL, &mandelbrot_fences[frame_index]) != VK_SUCCESS) {
-        return result_synchronization_primitive_create_failure;
-    }
-
     return result_success;
 }
 
@@ -67,6 +60,15 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
     result_t result;
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
+
+    for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
+        if (vkCreateFence(device, &(VkFenceCreateInfo) {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        }, NULL, &mandelbrot_fences[i]) != VK_SUCCESS) {
+            return result_synchronization_primitive_create_failure;
+        }
+    }
 
     int width;
     int height;
