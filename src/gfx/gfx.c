@@ -2,7 +2,6 @@
 #include "camera.h"
 #include "chrono.h"
 #include "gfx/default.h"
-#include "gfx/gfx_util.h"
 #include "gfx/mandelbrot_compute_pipeline.h"
 #include "gfx/mandelbrot_management.h"
 #include "gfx/mandelbrot_render_pipeline.h"
@@ -17,9 +16,7 @@
 #include <vulkan/vulkan_core.h>
 
 #define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
-
-#define NUM_FRAMES_IN_FLIGHT 2
+#define WINDOW_HEIGHT 480
 
 typedef union {
     uint32_t data[2];
@@ -39,7 +36,7 @@ VkSurfaceFormatKHR surface_format;
 static VkPresentModeKHR present_mode;
 static VkSemaphore image_available_semaphores[NUM_FRAMES_IN_FLIGHT];
 static VkSemaphore render_finished_semaphores[NUM_FRAMES_IN_FLIGHT];
-static VkFence in_flight_fences[NUM_FRAMES_IN_FLIGHT];
+VkFence in_flight_fences[NUM_FRAMES_IN_FLIGHT];
 static uint32_t num_swapchain_images;
 static VkImage* swapchain_images;
 static VkImageView* swapchain_image_views;
@@ -782,7 +779,7 @@ result_t draw_gfx(float delta) {
     }, VK_SUBPASS_CONTENTS_INLINE);
 
     mat3s affine_map = get_affine_map(delta);
-    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_front_frame_index(), &affine_map)) != result_success) {
+    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_mandelbrot_front_frame_index(), frame_index, &affine_map)) != result_success) {
         return result;
     }
 

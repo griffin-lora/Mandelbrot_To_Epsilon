@@ -1,7 +1,6 @@
 #include "mandelbrot_render_pipeline.h"
 #include "gfx.h"
 #include "gfx/default.h"
-#include "gfx/mandelbrot_compute_pipeline.h"
 #include "gfx/mandelbrot_management.h"
 #include "gfx/pipeline.h"
 #include "gfx/gfx_util.h"
@@ -242,6 +241,8 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result_sampler_create_failure;
     }
 
+    update_mandelbrot_render_pipeline(get_mandelbrot_front_frame_index());
+
     return result_success;
 }
 
@@ -263,7 +264,9 @@ void update_mandelbrot_render_pipeline(size_t frame_index) {
     }, 0, NULL);
 }
 
-result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, size_t frame_index, const mat3s* affine_map) {
+result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, size_t mandelbrot_frame_index, size_t render_frame_index, const mat3s* affine_map) {
+    mandelbrot_frame_index_to_render_frame_index[mandelbrot_frame_index] = render_frame_index;
+
     push_constants_t push_constants;
     for (size_t i = 0; i < 3; i++) {
         push_constants.affine_map[i].col = affine_map->col[i];
@@ -273,7 +276,7 @@ result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, size_t 
 
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
 
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_sets[frame_index] }, 0, NULL);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_sets[mandelbrot_frame_index] }, 0, NULL);
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, (VkDeviceSize[1]) { 0 });
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 

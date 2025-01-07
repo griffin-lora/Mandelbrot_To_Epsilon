@@ -7,6 +7,7 @@
 #include "result.h"
 #include "util.h"
 #include <stdint.h>
+#include <string.h>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan_core.h>
 
@@ -15,6 +16,8 @@ static size_t front_frame_index = 0;
 VkImage mandelbrot_color_images[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 VkImageView mandelbrot_color_image_views[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 mandelbrot_dispatch_t mandelbrot_dispatches[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+size_t mandelbrot_frame_index_to_render_frame_index[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+
 static VmaAllocation mandelbrot_color_image_allocations[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 static VkFence mandelbrot_fences[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 static VkCommandBuffer mandelbrot_command_buffers[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
@@ -62,6 +65,8 @@ static void destroy_mandelbrot_image(size_t index) {
 
 result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence command_fence, uint32_t graphics_queue_family_index) {
     result_t result;
+
+    memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
 
     int width;
     int height;
@@ -125,17 +130,20 @@ result_t manage_mandelbrot_frames() {
     result_t result;
 
     {
-        VkFence command_fence = mandelbrot_fences[(front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+        size_t back_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
+        VkFence command_fence = mandelbrot_fences[back_frame_index];
         if (vkGetFenceStatus(device, command_fence) != VK_SUCCESS) {
             return result_success;
         }
+
+        update_mandelbrot_render_pipeline(back_frame_index);
     }
     front_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
     size_t back_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
     
-    // TODO: Ensure some way that the gpu isnt using the back frame
-
-    update_mandelbrot_compute_pipeline(back_frame_index);
+    // Make sure the gpu is not rendering using the mandelbrot back frame
+    VkFence render_fence = in_flight_fences[mandelbrot_frame_index_to_render_frame_index[back_frame_index]];
+    vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX);
 
     VkCommandBuffer command_buffer = mandelbrot_command_buffers[back_frame_index];
     if (vkResetCommandBuffer(command_buffer, 0) != VK_SUCCESS) {
@@ -163,13 +171,12 @@ result_t manage_mandelbrot_frames() {
             return result;
         }
 
-        update_mandelbrot_render_pipeline(back_frame_index);
-
         record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, back_frame_index);
     } else {
         record_mandelbrot_compute_pipeline_fragment_to_compute_transition(command_buffer, back_frame_index);
     }
 
+    update_mandelbrot_compute_pipeline(back_frame_index);
     record_mandelbrot_compute_pipeline(command_buffer, back_frame_index);
 
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
@@ -197,6 +204,6 @@ void term_mandelbrot_management(void) {
     }
 }
 
-size_t get_front_frame_index(void) {
+size_t get_mandelbrot_front_frame_index(void) {
     return front_frame_index;
 }
