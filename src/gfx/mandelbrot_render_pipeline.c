@@ -242,25 +242,25 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result_sampler_create_failure;
     }
 
-    for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
-        vkUpdateDescriptorSets(device, 1, (VkWriteDescriptorSet[1]) {
-            {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor_sets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .pImageInfo = &(VkDescriptorImageInfo) {
-                    .sampler = color_sampler,
-                    .imageView = mandelbrot_color_image_views[i],
-                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                }
-            }
-        }, 0, NULL);
-    }
-
     return result_success;
+}
+
+void update_mandelbrot_render_pipeline(size_t frame_index) {
+    vkUpdateDescriptorSets(device, 1, (VkWriteDescriptorSet[1]) {
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptor_sets[frame_index],
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .pImageInfo = &(VkDescriptorImageInfo) {
+                .sampler = color_sampler,
+                .imageView = mandelbrot_color_image_views[frame_index],
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        }
+    }, 0, NULL);
 }
 
 result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, size_t frame_index, const mat3s* affine_map) {
