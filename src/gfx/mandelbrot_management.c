@@ -103,10 +103,6 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
 }
 
 result_t manage_mandelbrot_frames(void) {
-    if (true) {
-        return result_success;
-    }
-
     result_t result;
 
     VkFence command_fence = mandelbrot_fences[(frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT];
