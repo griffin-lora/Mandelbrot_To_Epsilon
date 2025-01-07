@@ -18,5 +18,5 @@ extern VkRenderPass frame_render_pass;
 extern VkFence in_flight_fences[NUM_FRAMES_IN_FLIGHT];
 
 result_t init_gfx(void);
-result_t draw_gfx(float delta);
+result_t draw_gfx();
 void term_gfx(void);

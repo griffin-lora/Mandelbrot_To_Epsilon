@@ -9,6 +9,12 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+typedef struct {
+    struct {
+        alignas(16) vec3s col;
+    } affine_map[3];
+} push_constants_t;
+
 static pipeline_t pipeline;
 
 static VkDescriptorSetLayout descriptor_set_layout;
@@ -52,6 +58,11 @@ result_t init_mandelbrot_compute_pipeline(VkDescriptorPool descriptor_pool) {
         .pSetLayouts = (VkDescriptorSetLayout[1]) {
             descriptor_set_layout
         },
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &(VkPushConstantRange) {
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+            .size = sizeof(push_constants_t)
+        }
     }, NULL, &pipeline.pipeline_layout) != VK_SUCCESS) {
         return result_pipeline_layout_create_failure;
     }
@@ -110,8 +121,16 @@ void record_mandelbrot_compute_pipeline_fragment_to_compute_transition(VkCommand
     });
 }
 
-void record_mandelbrot_compute_pipeline(VkCommandBuffer command_buffer, size_t frame_index) {
+void record_mandelbrot_compute_pipeline(VkCommandBuffer command_buffer, size_t frame_index, const mat3s* affine_map) {
+    push_constants_t push_constants;
+    for (size_t i = 0; i < 3; i++) {
+        push_constants.affine_map[i].col = affine_map->col[i];
+    }
+
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
+
+    vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constants), &push_constants);
+
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
     
     const mandelbrot_dispatch_t* dispatch = &mandelbrot_dispatches[frame_index];

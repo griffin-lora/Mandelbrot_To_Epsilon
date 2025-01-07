@@ -8,6 +8,7 @@
 #include "result.h"
 #include "util.h"
 #include <GLFW/glfw3.h>
+#include <cglm/struct/mat3.h>
 #include <cglm/types-struct.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -713,7 +714,7 @@ static void term_glfw_core(void) {
     glfwTerminate();
 }
 
-result_t draw_gfx(float delta) {
+result_t draw_gfx() {
     microseconds_t start = get_current_microseconds();
 
     result_t result;
@@ -778,8 +779,8 @@ result_t draw_gfx(float delta) {
         }
     }, VK_SUBPASS_CONTENTS_INLINE);
 
-    mat3s affine_map = get_affine_map(delta);
-    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_mandelbrot_front_frame_index(), frame_index, &affine_map)) != result_success) {
+    mat3s tween_affine_map = glms_mat3_mul(glms_mat3_inv(mandelbrot_compute_affine_map), get_affine_map());
+    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_mandelbrot_front_frame_index(), frame_index, &tween_affine_map)) != result_success) {
         return result;
     }
 

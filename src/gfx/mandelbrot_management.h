@@ -1,5 +1,6 @@
 #pragma once
 #include "result.h"
+#include <cglm/types-struct.h>
 #include <vulkan/vulkan.h>
 
 #define NUM_MANDELBROT_FRAMES_IN_FLIGHT 2
@@ -13,6 +14,8 @@ extern VkImage mandelbrot_color_images[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern VkImageView mandelbrot_color_image_views[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern mandelbrot_dispatch_t mandelbrot_dispatches[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern size_t mandelbrot_frame_index_to_render_frame_index[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+
+extern mat3s mandelbrot_compute_affine_map;
 
 result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence command_fence, uint32_t graphics_queue_family_index);
 result_t manage_mandelbrot_frames();

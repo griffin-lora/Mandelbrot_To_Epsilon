@@ -1,4 +1,5 @@
 #include "mandelbrot_management.h"
+#include "camera.h"
 #include "gfx/default.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_util.h"
@@ -23,6 +24,8 @@ static VkFence mandelbrot_fences[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 static VkCommandBuffer mandelbrot_command_buffers[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 
 static VkCommandPool mandelbrot_command_pool;
+
+mat3s mandelbrot_compute_affine_map;
 
 static result_t create_mandelbrot_image(size_t frame_index, uint32_t width, uint32_t height) {
     mandelbrot_dispatches[frame_index] = (mandelbrot_dispatch_t) { width / 8, height / 8 };
@@ -91,9 +94,11 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
         return result_command_buffer_begin_failure;
     }
 
+    mandelbrot_compute_affine_map = get_affine_map();
+
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
         record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, i);
-        record_mandelbrot_compute_pipeline(command_buffer, i);
+        record_mandelbrot_compute_pipeline(command_buffer, i, &mandelbrot_compute_affine_map);
     }
     
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
@@ -176,8 +181,10 @@ result_t manage_mandelbrot_frames() {
         record_mandelbrot_compute_pipeline_fragment_to_compute_transition(command_buffer, back_frame_index);
     }
 
+    mandelbrot_compute_affine_map = get_affine_map();
+
     update_mandelbrot_compute_pipeline(back_frame_index);
-    record_mandelbrot_compute_pipeline(command_buffer, back_frame_index);
+    record_mandelbrot_compute_pipeline(command_buffer, back_frame_index, &mandelbrot_compute_affine_map);
 
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
         return result_command_buffer_end_failure;

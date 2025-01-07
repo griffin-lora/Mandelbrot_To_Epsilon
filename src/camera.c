@@ -72,8 +72,13 @@ void init_camera(void) {
     glfwSetScrollCallback(window, scroll);
 }
 
-void update_camera(void) {
+void update_camera(float delta) {
     target_offset = glms_vec2_add(target_offset, glms_vec2_scale(get_offset(), current_scale_factor));
+
+    float lerp_time = 24.0f * delta;
+    if (lerp_time > 1.0f) { lerp_time = 1.0f; }
+    current_scale_factor = glm_lerp(current_scale_factor, target_scale_factor, lerp_time);
+    current_offset = glms_vec2_lerp(current_offset, target_offset, lerp_time);
 }
 
 static mat3s get_preaspect_affine_map(float scale_factor, vec2s offset) {
@@ -82,26 +87,15 @@ static mat3s get_preaspect_affine_map(float scale_factor, vec2s offset) {
     return glms_mat3_mul(translate_affine_map, scale_affine_map);
 }
 
-mat3s get_affine_map(float delta) {
-    (void) delta;
-
-    float lerp_time = 24.0f * delta;
-    if (lerp_time > 1.0f) { lerp_time = 1.0f; }
-    current_scale_factor = glm_lerp(current_scale_factor, target_scale_factor, lerp_time);
-    current_offset = glms_vec2_lerp(current_offset, target_offset, lerp_time);
-
+mat3s get_affine_map() {
     mat3s current_affine_map = get_preaspect_affine_map(current_scale_factor, current_offset);
-    mat3s target_affine_map = get_preaspect_affine_map(target_scale_factor, target_offset);
-
-    mat3s tween_affine_map = glms_mat3_mul(glms_mat3_inv(target_affine_map), current_affine_map);
 
     int width;
     int height;
     glfwGetFramebufferSize(window, &width, &height);
     mat3s aspect_affine_map = glms_scale2d_make((vec2s) {{ (float) width / (float) height, 1.0f }});
 
-    // mat3s affine_map = glms_mat3_mul(tween_affine_map, aspect_affine_map);
-    mat3s affine_map = glms_mat3_mul(glms_mat3_mul(target_affine_map, tween_affine_map), aspect_affine_map);
+    mat3s affine_map = glms_mat3_mul(current_affine_map, aspect_affine_map);
 
     return affine_map;
 }

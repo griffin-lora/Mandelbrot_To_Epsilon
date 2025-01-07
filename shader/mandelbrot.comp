@@ -3,9 +3,9 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 0, rgba8) writeonly uniform image2D color_image;
-// layout(push_constant, std430) uniform push_constants_t {
-//     mat3 affine_map;
-// };
+layout(push_constant, std430) uniform push_constants_t {
+    mat3 affine_map;
+};
 
 vec2 square(vec2 z) {
     return vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y);
@@ -36,7 +36,7 @@ const vec3 colors[16] = vec3[16](
 
 vec4 get_color(vec2 c) {
     vec2 z = vec2(0.0, 0.0);
-    for (int i = 0; i < 250; i++) {
+    for (int i = 0; i < 500; i++) {
         z = square(z) + c;
         if (square_modulus(z) >= 4.0) {
             vec3 color = colors[i % 16];
@@ -49,7 +49,7 @@ vec4 get_color(vec2 c) {
 
 void main() {
     vec2 screen_position = 2.0*vec2(gl_GlobalInvocationID) / vec2(imageSize(color_image)) - vec2(1.0, 1.0);
-    vec2 c = (/*affine_map * */vec3(screen_position, 1.0)).xy;
+    vec2 c = (affine_map * vec3(screen_position, 1.0)).xy;
     
     imageStore(color_image, ivec2(gl_GlobalInvocationID), get_color(c));
 }

@@ -20,9 +20,9 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         microseconds_t start = get_current_microseconds() - program_start;
         glfwPollEvents();
-        update_camera();
+        update_camera(delta);
 
-        if ((result = draw_gfx(delta)) != result_success) {
+        if ((result = draw_gfx()) != result_success) {
             print_result_error(result);
             return 1;
         }
