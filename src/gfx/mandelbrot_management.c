@@ -51,7 +51,6 @@ static result_t create_mandelbrot_image(size_t frame_index, uint32_t width, uint
 }
 
 static void destroy_mandelbrot_image(size_t index) {
-    vkDestroyFence(device, mandelbrot_fences[index], NULL);
     vkDestroyImageView(device, mandelbrot_color_image_views[index], NULL);
     vmaDestroyImage(allocator, mandelbrot_color_images[index], mandelbrot_color_image_allocations[index]);
 }
@@ -93,10 +92,9 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
     }
 
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
-        record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, front_frame_index);
+        record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, i);
+        record_mandelbrot_compute_pipeline(command_buffer, i);
     }
-
-    record_mandelbrot_compute_pipeline(command_buffer, front_frame_index);
     
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
         return result_command_buffer_end_failure;
@@ -202,6 +200,7 @@ void term_mandelbrot_management(void) {
     vkDestroyCommandPool(device, mandelbrot_command_pool, NULL);
 
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyFence(device, mandelbrot_fences[i], NULL);
         destroy_mandelbrot_image(i);
     }
 }
