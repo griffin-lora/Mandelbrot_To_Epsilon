@@ -2,6 +2,7 @@
 #include "gfx.h"
 #include "gfx/default.h"
 #include "gfx/mandelbrot_compute_pipeline.h"
+#include "gfx/mandelbrot_management.h"
 #include "gfx/pipeline.h"
 #include "gfx/gfx_util.h"
 #include "result.h"
@@ -34,7 +35,7 @@ static uint16_t mandelbrot_indices[6] = {
 
 static pipeline_t pipeline;
 static VkDescriptorSetLayout descriptor_set_layout;
-static VkDescriptorSet descriptor_set;
+static VkDescriptorSet descriptor_sets[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 
 static VkBuffer vertex_staging_buffer;
 static VmaAllocation vertex_staging_buffer_allocation;
@@ -77,14 +78,21 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
     }, NULL, &descriptor_set_layout) != VK_SUCCESS) {
         return result_descriptor_set_layout_create_failure;
     }
+    
+    {
+        VkDescriptorSetLayout set_layouts[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+        for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
+            set_layouts[i] = descriptor_set_layout;
+        }
 
-    if (vkAllocateDescriptorSets(device, &(VkDescriptorSetAllocateInfo) {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = descriptor_pool,
-        .descriptorSetCount = 1,
-        .pSetLayouts = &descriptor_set_layout
-    }, &descriptor_set) != VK_SUCCESS) {
-        return result_descriptor_sets_allocate_failure;
+        if (vkAllocateDescriptorSets(device, &(VkDescriptorSetAllocateInfo) {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = descriptor_pool,
+            .descriptorSetCount = NUM_MANDELBROT_FRAMES_IN_FLIGHT,
+            .pSetLayouts = set_layouts
+        }, descriptor_sets) != VK_SUCCESS) {
+            return result_descriptor_sets_allocate_failure;
+        }
     }
     
     if (vkCreatePipelineLayout(device, &(VkPipelineLayoutCreateInfo) {
@@ -224,8 +232,8 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
     if (vkCreateSampler(device, &(VkSamplerCreateInfo) {
         DEFAULT_VK_SAMPLER,
         .maxAnisotropy = physical_device_properties->limits.maxSamplerAnisotropy,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
         .minFilter = VK_FILTER_NEAREST,
         .magFilter = VK_FILTER_NEAREST,
         .anisotropyEnable = VK_FALSE,
@@ -234,36 +242,38 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result_sampler_create_failure;
     }
 
-    vkUpdateDescriptorSets(device, 1, (VkWriteDescriptorSet[1]) {
-        {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptor_set,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .pImageInfo = &(VkDescriptorImageInfo) {
-                .sampler = color_sampler,
-                .imageView = mandelbrot_color_image_view,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
+        vkUpdateDescriptorSets(device, 1, (VkWriteDescriptorSet[1]) {
+            {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptor_sets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .pImageInfo = &(VkDescriptorImageInfo) {
+                    .sampler = color_sampler,
+                    .imageView = mandelbrot_color_image_views[i],
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                }
             }
-        }
-    }, 0, NULL);
+        }, 0, NULL);
+    }
 
     return result_success;
 }
 
-result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, const mat3s* affine_map) {
-    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
-
+result_t draw_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, size_t frame_index, const mat3s* affine_map) {
     push_constants_t push_constants;
     for (size_t i = 0; i < 3; i++) {
         push_constants.affine_map[i].col = affine_map->col[i];
     }
 
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+
     vkCmdPushConstants(command_buffer, pipeline.pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constants), &push_constants);
 
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_set }, 0, NULL);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline_layout, 0, 1, (VkDescriptorSet[1]) { descriptor_sets[frame_index] }, 0, NULL);
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, (VkDeviceSize[1]) { 0 });
     vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 

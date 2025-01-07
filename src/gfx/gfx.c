@@ -4,6 +4,7 @@
 #include "gfx/default.h"
 #include "gfx/gfx_util.h"
 #include "gfx/mandelbrot_compute_pipeline.h"
+#include "gfx/mandelbrot_management.h"
 #include "gfx/mandelbrot_render_pipeline.h"
 #include "result.h"
 #include "util.h"
@@ -56,7 +57,7 @@ VkSampleCountFlagBits render_multisample_flags;
 VkRenderPass frame_render_pass;
 static VkCommandBuffer frame_command_buffers[NUM_FRAMES_IN_FLIGHT];
 
-static uint32_t frame_index = 0;
+static size_t frame_index = 0;
 
 static VkImage frame_image;
 static VmaAllocation frame_image_allocation;
@@ -637,7 +638,7 @@ static result_t init_vk_core(void) {
             },
             {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 6
+                .descriptorCount = 12
             }
         },
         .maxSets = 1
@@ -649,21 +650,14 @@ static result_t init_vk_core(void) {
         return result;
     }
 
+    if ((result = init_mandelbrot_management(generic_command_buffer, generic_command_fence, queue_family_indices.graphics)) != result_success) {
+        return result;
+    }
+
     if ((result = init_mandelbrot_render_pipeline(generic_command_buffer, generic_command_fence, generic_descriptor_pool, &physical_device_properties)) != result_success) {
         return result;
     }
 
-    if ((result = record_mandelbrot_compute_pipeline(generic_command_buffer)) != result_success) {
-        return result;
-    }
-    microseconds_t start = get_current_microseconds();
-    if ((result = submit_and_wait(generic_command_buffer, generic_command_fence)) != result_success) {
-        return result;
-    }
-    printf("Mandelbrot generation %ldμs\n", get_current_microseconds() - start);
-    if ((result = reset_command_processing(generic_command_buffer, generic_command_fence)) != result_success) {
-        return result;
-    }
 
     return result_success;
 }
@@ -671,6 +665,7 @@ static result_t init_vk_core(void) {
 static void term_vk_core(void) {
     vkDeviceWaitIdle(device);
     term_mandelbrot_render_pipeline();
+    term_mandelbrot_management();
     term_mandelbrot_compute_pipeline();
 
     vkDestroyDescriptorPool(device, generic_descriptor_pool, NULL);
@@ -725,6 +720,10 @@ result_t draw_gfx(float delta) {
     microseconds_t start = get_current_microseconds();
 
     result_t result;
+
+    if ((result = manage_mandelbrot_frames()) != result_success) {
+        return result;
+    }
 
     VkSemaphore image_available_semaphore = image_available_semaphores[frame_index];
     VkSemaphore render_finished_semaphore = render_finished_semaphores[frame_index];
@@ -783,7 +782,7 @@ result_t draw_gfx(float delta) {
     }, VK_SUBPASS_CONTENTS_INLINE);
 
     mat3s affine_map = get_affine_map(delta);
-    if ((result = draw_mandelbrot_render_pipeline(command_buffer, &affine_map)) != result_success) {
+    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_front_frame_index(), &affine_map)) != result_success) {
         return result;
     }
 
