@@ -24,6 +24,7 @@ typedef enum {
     result_shader_module_create_failure,
     result_graphics_pipelines_create_failure,
     result_compute_pipelines_create_failure,
+    result_query_pool_create_failure,
 
     result_descriptor_sets_allocate_failure,
 

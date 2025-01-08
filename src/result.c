@@ -25,6 +25,7 @@ static const char* get_result_string(result_t result) {
         case result_shader_module_create_failure: return "Failed to create shader module";
         case result_graphics_pipelines_create_failure: return "Failed to create graphics pipelines";
         case result_compute_pipelines_create_failure: return "Failed to create compute pipelines";
+        case result_query_pool_create_failure: return "Failed to create query pool";
 
         case result_descriptor_sets_allocate_failure: return "Failed to allocate descriptor sets";
 

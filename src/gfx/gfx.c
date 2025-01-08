@@ -10,10 +10,12 @@
 #include <GLFW/glfw3.h>
 #include <cglm/struct/mat3.h>
 #include <cglm/types-struct.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
@@ -64,6 +66,8 @@ static VkCommandBuffer generic_command_buffer;
 static VkFence generic_command_fence;
 
 static VkDescriptorPool generic_descriptor_pool;
+
+static VkQueryPool timestamp_query_pool;
 
 static const char* layers[] = {
     "VK_LAYER_KHRONOS_validation"
@@ -167,6 +171,9 @@ static result_t get_physical_device(uint32_t num_physical_devices, const VkPhysi
         if (physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU || physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU || physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_OTHER) {
             continue;
         }
+        if (physical_device_properties.limits.timestampPeriod == 0) {
+            continue;
+        }
 
         VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(physical_device, &features);
@@ -202,6 +209,11 @@ static result_t get_physical_device(uint32_t num_physical_devices, const VkPhysi
         uint32_t graphics_queue_family_index = get_graphics_queue_family_index(num_queue_families, queue_families);
         if (graphics_queue_family_index == NULL_UINT32) {
             continue;
+        }
+        if (!physical_device_properties.limits.timestampComputeAndGraphics) {
+            if (queue_families[graphics_queue_family_index].timestampValidBits == 0) {
+                continue;
+            }
         }
 
         uint32_t presentation_queue_family_index = get_presentation_queue_family_index(physical_device, num_queue_families, queue_families);
@@ -643,6 +655,14 @@ static result_t init_vk_core(void) {
         return result_descriptor_pool_create_failure;
     }
 
+    if (vkCreateQueryPool(device, &(VkQueryPoolCreateInfo) {
+        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .queryType = VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount = 2 * NUM_FRAMES_IN_FLIGHT
+    }, NULL, &timestamp_query_pool) != VK_SUCCESS) {
+        return result_query_pool_create_failure;
+    }
+
     if ((result = init_mandelbrot_compute_pipeline(generic_descriptor_pool)) != result_success) {
         return result;
     }
@@ -664,8 +684,9 @@ static void term_vk_core(void) {
     term_mandelbrot_management();
     term_mandelbrot_compute_pipeline();
 
+    vkDestroyQueryPool(device, timestamp_query_pool, NULL);
     vkDestroyDescriptorPool(device, generic_descriptor_pool, NULL);
-
+    
     vkDestroyRenderPass(device, frame_render_pass, NULL);
     vkDestroyCommandPool(device, command_pool, NULL);
 
@@ -713,8 +734,6 @@ static void term_glfw_core(void) {
 }
 
 result_t draw_gfx() {
-    microseconds_t start = get_current_microseconds();
-
     result_t result;
 
     if ((result = manage_mandelbrot_frames()) != result_success) {
@@ -725,6 +744,15 @@ result_t draw_gfx() {
     VkSemaphore render_finished_semaphore = render_finished_semaphores[frame_index];
     VkFence in_flight_fence = in_flight_fences[frame_index];
     vkWaitForFences(device, 1, &in_flight_fence, VK_TRUE, UINT64_MAX);
+
+    uint64_t timestamps[2];
+    vkGetQueryPoolResults(device, timestamp_query_pool, 2 * (uint32_t) frame_index, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+
+    VkPhysicalDeviceProperties physical_device_properties;
+    vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
+
+    float frame_delta = (float) (timestamps[1] - timestamps[0]) * physical_device_properties.limits.timestampPeriod / 1000000000.0f;
+    printf("FPS: %f\n", 1.0f/frame_delta);
 
     uint32_t image_index;
     {
@@ -748,6 +776,9 @@ result_t draw_gfx() {
     }) != VK_SUCCESS) {
         return result_command_buffer_begin_failure;
     }
+
+    vkCmdResetQueryPool(command_buffer, timestamp_query_pool, 2 * (uint32_t) frame_index, 2);
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) frame_index);
 
     VkViewport viewport = {
         .x = 0.0f,
@@ -783,6 +814,8 @@ result_t draw_gfx() {
     }
 
     vkCmdEndRenderPass(command_buffer);
+
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) frame_index + 1);
 
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
         return result_command_buffer_end_failure;
@@ -824,8 +857,6 @@ result_t draw_gfx() {
 
     frame_index += 1;
     frame_index %= NUM_FRAMES_IN_FLIGHT;
-    (void) start;
-    // printf("Frame took %ldμs\n", get_current_microseconds() - start);
 
     return result_success;
 }
