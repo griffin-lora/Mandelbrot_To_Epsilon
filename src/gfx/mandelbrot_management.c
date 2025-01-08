@@ -22,6 +22,7 @@ static VmaAllocation mandelbrot_color_image_allocations[NUM_MANDELBROT_FRAMES_IN
 static VkFence mandelbrot_fences[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 static VkCommandBuffer mandelbrot_command_buffers[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 
+static VkQueue mandelbrot_queue;
 static VkCommandPool mandelbrot_command_pool;
 
 mat3s mandelbrot_compute_affine_map;
@@ -59,6 +60,8 @@ static void destroy_mandelbrot_image(size_t index) {
 
 result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, uint32_t queue_family_index) {
     result_t result;
+
+    vkGetDeviceQueue(device, queue_family_index, 0, &mandelbrot_queue);
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
 
@@ -130,7 +133,7 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
     return result_success;
 }
 
-result_t manage_mandelbrot_frames(VkQueue queue) {
+result_t manage_mandelbrot_frames() {
     result_t result;
 
     {
@@ -191,7 +194,7 @@ result_t manage_mandelbrot_frames(VkQueue queue) {
 
     VkFence command_fence = mandelbrot_fences[back_frame_index];
     vkResetFences(device, 1, &command_fence);
-    if (vkQueueSubmit(queue, 1, &(VkSubmitInfo) {
+    if (vkQueueSubmit(mandelbrot_queue, 1, &(VkSubmitInfo) {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
         .pCommandBuffers = &command_buffer

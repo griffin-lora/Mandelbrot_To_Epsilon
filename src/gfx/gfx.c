@@ -655,7 +655,6 @@ static result_t init_vk_core(void) {
         return result;
     }
 
-
     return result_success;
 }
 
@@ -718,7 +717,7 @@ result_t draw_gfx() {
 
     result_t result;
 
-    if ((result = manage_mandelbrot_frames(graphics_queue)) != result_success) {
+    if ((result = manage_mandelbrot_frames()) != result_success) {
         return result;
     }
 
