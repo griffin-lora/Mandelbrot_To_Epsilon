@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
@@ -29,7 +28,7 @@ typedef union {
 
 GLFWwindow* window;
 VkDevice device;
-VkQueue queue;
+static VkQueue graphics_queue;
 static VkPhysicalDevice physical_device;
 VmaAllocator allocator;
 static queue_family_indices_t queue_family_indices;
@@ -500,7 +499,7 @@ static result_t init_vk_core(void) {
         return result_allocator_create_failure;
     }
 
-    vkGetDeviceQueue(device, queue_family_indices.graphics, 0, &queue);
+    vkGetDeviceQueue(device, queue_family_indices.graphics, 0, &graphics_queue);
     vkGetDeviceQueue(device, queue_family_indices.presentation, 0, &presentation_queue);
 
     {
@@ -648,11 +647,11 @@ static result_t init_vk_core(void) {
         return result;
     }
 
-    if ((result = init_mandelbrot_management(generic_command_buffer, generic_command_fence, queue_family_indices.graphics)) != result_success) {
+    if ((result = init_mandelbrot_management(graphics_queue, generic_command_buffer, generic_command_fence, queue_family_indices.graphics)) != result_success) {
         return result;
     }
 
-    if ((result = init_mandelbrot_render_pipeline(generic_command_buffer, generic_command_fence, generic_descriptor_pool, &physical_device_properties)) != result_success) {
+    if ((result = init_mandelbrot_render_pipeline(graphics_queue, generic_command_buffer, generic_command_fence, generic_descriptor_pool, &physical_device_properties)) != result_success) {
         return result;
     }
 
@@ -719,7 +718,7 @@ result_t draw_gfx() {
 
     result_t result;
 
-    if ((result = manage_mandelbrot_frames()) != result_success) {
+    if ((result = manage_mandelbrot_frames(graphics_queue)) != result_success) {
         return result;
     }
 
@@ -792,7 +791,7 @@ result_t draw_gfx() {
 
     VkPipelineStageFlags wait_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     
-    if (vkQueueSubmit(queue, 1, &(VkSubmitInfo) {
+    if (vkQueueSubmit(graphics_queue, 1, &(VkSubmitInfo) {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &image_available_semaphore,

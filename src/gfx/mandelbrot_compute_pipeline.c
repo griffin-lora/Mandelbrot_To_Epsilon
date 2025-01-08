@@ -7,7 +7,6 @@
 #include "result.h"
 #include <cglm/types-struct.h>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 typedef struct {
     struct {

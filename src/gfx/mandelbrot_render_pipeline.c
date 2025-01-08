@@ -12,7 +12,6 @@
 #include <string.h>
 #include <cglm/struct/affine2d.h>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 typedef struct {
     struct {
@@ -48,7 +47,7 @@ static VmaAllocation index_buffer_allocation;
 
 static VkSampler color_sampler;
 
-result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence command_fence, VkDescriptorPool descriptor_pool, const VkPhysicalDeviceProperties* physical_device_properties) {
+result_t init_mandelbrot_render_pipeline(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, VkDescriptorPool descriptor_pool, const VkPhysicalDeviceProperties* physical_device_properties) {
     (void) physical_device_properties;
     (void) descriptor_pool;
 
@@ -190,13 +189,11 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result_buffer_create_failure;
     }
     
-    const void* mandelbrot_vertex_array = mandelbrot_vertices;
-    if ((result = writes_to_buffer(vertex_staging_buffer_allocation, sizeof(mandelbrot_vertices), 1, &mandelbrot_vertex_array)) != result_success) {
+    if ((result = write_to_buffer(vertex_staging_buffer_allocation, sizeof(mandelbrot_vertices), mandelbrot_vertices)) != result_success) {
         return result;
     }
     
-    const void* mandelbrot_index_array = mandelbrot_indices;
-    if ((result = writes_to_buffer(index_staging_buffer_allocation, sizeof(mandelbrot_indices), 1, &mandelbrot_index_array)) != result_success) {
+    if ((result = write_to_buffer(index_staging_buffer_allocation, sizeof(mandelbrot_indices), mandelbrot_indices)) != result_success) {
         return result;
     }
 
@@ -218,7 +215,7 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
         return result_command_buffer_end_failure;
     }
 
-    if ((result = submit_and_wait(command_buffer, command_fence)) != result_success) {
+    if ((result = submit_and_wait(queue, command_buffer, command_fence)) != result_success) {
         return result;
     }
     if ((result = reset_command_processing(command_buffer, command_fence)) != result_success) {
@@ -231,8 +228,8 @@ result_t init_mandelbrot_render_pipeline(VkCommandBuffer command_buffer, VkFence
     if (vkCreateSampler(device, &(VkSamplerCreateInfo) {
         DEFAULT_VK_SAMPLER,
         .maxAnisotropy = physical_device_properties->limits.maxSamplerAnisotropy,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .minFilter = VK_FILTER_NEAREST,
         .magFilter = VK_FILTER_NEAREST,
         .anisotropyEnable = VK_FALSE,

@@ -17,8 +17,8 @@ extern size_t mandelbrot_frame_index_to_render_frame_index[NUM_MANDELBROT_FRAMES
 
 extern mat3s mandelbrot_compute_affine_map;
 
-result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence command_fence, uint32_t graphics_queue_family_index);
-result_t manage_mandelbrot_frames();
+result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, uint32_t queue_family_index);
+result_t manage_mandelbrot_frames(VkQueue queue);
 void term_mandelbrot_management(void);
 
 size_t get_mandelbrot_front_frame_index(void);

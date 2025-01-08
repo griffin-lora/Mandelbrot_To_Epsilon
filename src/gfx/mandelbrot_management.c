@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <vk_mem_alloc.h>
-#include <vulkan/vulkan_core.h>
 
 static size_t front_frame_index = 0;
 
@@ -58,7 +57,7 @@ static void destroy_mandelbrot_image(size_t index) {
     vmaDestroyImage(allocator, mandelbrot_color_images[index], mandelbrot_color_image_allocations[index]);
 }
 
-result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence command_fence, uint32_t graphics_queue_family_index) {
+result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, uint32_t queue_family_index) {
     result_t result;
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
@@ -105,7 +104,7 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
         return result_command_buffer_end_failure;
     }
 
-    if ((result = submit_and_wait(command_buffer, command_fence)) != result_success) {
+    if ((result = submit_and_wait(queue, command_buffer, command_fence)) != result_success) {
         return result;
     }
     if ((result = reset_command_processing(command_buffer, command_fence)) != result_success) {
@@ -115,7 +114,7 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
     if (vkCreateCommandPool(device, &(VkCommandPoolCreateInfo) {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = graphics_queue_family_index
+        .queueFamilyIndex = queue_family_index
     }, NULL, &mandelbrot_command_pool) != VK_SUCCESS) {
         return result_command_pool_create_failure;
     }
@@ -131,7 +130,7 @@ result_t init_mandelbrot_management(VkCommandBuffer command_buffer, VkFence comm
     return result_success;
 }
 
-result_t manage_mandelbrot_frames() {
+result_t manage_mandelbrot_frames(VkQueue queue) {
     result_t result;
 
     {
