@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "chrono.h"
 #include "gfx/default.h"
+#include "gfx/gfx_util.h"
 #include "gfx/mandelbrot_compute_pipeline.h"
 #include "gfx/mandelbrot_management.h"
 #include "gfx/mandelbrot_render_pipeline.h"
@@ -661,6 +662,29 @@ static result_t init_vk_core(void) {
         .queryCount = 2 * NUM_FRAMES_IN_FLIGHT
     }, NULL, &timestamp_query_pool) != VK_SUCCESS) {
         return result_query_pool_create_failure;
+    }
+
+    if (vkBeginCommandBuffer(generic_command_buffer, &(VkCommandBufferBeginInfo) {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+    }) != VK_SUCCESS) {
+        return result_command_buffer_begin_failure;
+    }
+
+    for (size_t i = 0; i < NUM_FRAMES_IN_FLIGHT; i++) {
+        vkCmdWriteTimestamp(generic_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) i);
+        vkCmdWriteTimestamp(generic_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) i + 1);
+    }
+    
+    if (vkEndCommandBuffer(generic_command_buffer) != VK_SUCCESS) {
+        return result_command_buffer_end_failure;
+    }
+
+    if ((result = submit_and_wait(graphics_queue, generic_command_buffer, generic_command_fence)) != result_success) {
+        return result;
+    }
+    if ((result = reset_command_processing(generic_command_buffer, generic_command_fence)) != result_success) {
+        return result;
     }
 
     if ((result = init_mandelbrot_compute_pipeline(generic_descriptor_pool)) != result_success) {
