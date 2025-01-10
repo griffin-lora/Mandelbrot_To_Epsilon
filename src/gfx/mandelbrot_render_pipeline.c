@@ -230,8 +230,8 @@ result_t init_mandelbrot_render_pipeline(VkQueue queue, VkCommandBuffer command_
         .maxAnisotropy = physical_device_properties->limits.maxSamplerAnisotropy,
         .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .minFilter = VK_FILTER_NEAREST,
-        .magFilter = VK_FILTER_NEAREST,
+        .minFilter = VK_FILTER_LINEAR,
+        .magFilter = VK_FILTER_LINEAR,
         .anisotropyEnable = VK_FALSE,
         .maxLod = (float) 1.0f
     }, NULL, &color_sampler) != VK_SUCCESS) {
