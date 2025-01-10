@@ -486,8 +486,8 @@ static result_t init_vk_core(void) {
             {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .queueFamilyIndex = queue_family_indices.graphics,
-                .queueCount = 1,
-                .pQueuePriorities = (float[1]) { 1.0f }
+                .queueCount = 2,
+                .pQueuePriorities = (float[2]) { 1.0f, 0.0f }
             }
         },
         .pEnabledFeatures = NULL,
@@ -828,8 +828,9 @@ result_t draw_gfx(microseconds_t* out_frame_render_time, microseconds_t* out_man
         }
     }, VK_SUBPASS_CONTENTS_INLINE);
 
-    mat3s tween_affine_map = glms_mat3_mul(glms_mat3_inv(mandelbrot_compute_affine_map), get_affine_map());
-    if ((result = draw_mandelbrot_render_pipeline(command_buffer, get_mandelbrot_front_frame_index(), frame_index, &tween_affine_map)) != result_success) {
+    size_t mandelbrot_front_frame_index = get_mandelbrot_front_frame_index();
+    mat3s tween_affine_map = glms_mat3_mul(glms_mat3_inv(mandelbrot_compute_affine_maps[mandelbrot_front_frame_index]), get_affine_map());
+    if ((result = draw_mandelbrot_render_pipeline(command_buffer, mandelbrot_front_frame_index, frame_index, &tween_affine_map)) != result_success) {
         return result;
     }
 

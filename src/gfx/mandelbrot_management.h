@@ -15,8 +15,7 @@ extern VkImage mandelbrot_color_images[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern VkImageView mandelbrot_color_image_views[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern mandelbrot_dispatch_t mandelbrot_dispatches[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 extern size_t mandelbrot_frame_index_to_render_frame_index[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
-
-extern mat3s mandelbrot_compute_affine_map;
+extern mat3s mandelbrot_compute_affine_maps[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 
 result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, uint32_t queue_family_index);
 result_t manage_mandelbrot_frames(const VkPhysicalDeviceProperties* physical_device_properties, microseconds_t* out_mandelbrot_frame_compute_time);

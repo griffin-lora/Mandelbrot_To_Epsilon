@@ -23,10 +23,10 @@ static VmaAllocation mandelbrot_color_image_allocations[NUM_MANDELBROT_FRAMES_IN
 static VkFence mandelbrot_fences[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 static VkCommandBuffer mandelbrot_command_buffers[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
 
+mat3s mandelbrot_compute_affine_maps[NUM_MANDELBROT_FRAMES_IN_FLIGHT];
+
 static VkQueue mandelbrot_queue;
 static VkCommandPool mandelbrot_command_pool;
-
-mat3s mandelbrot_compute_affine_map;
 
 static VkQueryPool mandelbrot_timestamp_query_pool;
 
@@ -72,7 +72,7 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
         return result_query_pool_create_failure;
     }
 
-    vkGetDeviceQueue(device, queue_family_index, 0, &mandelbrot_queue);
+    vkGetDeviceQueue(device, queue_family_index, 1, &mandelbrot_queue);
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
 
@@ -107,16 +107,16 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
         return result_command_buffer_begin_failure;
     }
 
+    vkCmdResetQueryPool(command_buffer, mandelbrot_timestamp_query_pool, 0, 2 * NUM_MANDELBROT_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
         vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) i);
         vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) i + 1);
+        mandelbrot_compute_affine_maps[i] = get_affine_map();
     }
-
-    mandelbrot_compute_affine_map = get_affine_map();
 
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
         record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, i);
-        record_mandelbrot_compute_pipeline(command_buffer, i, &mandelbrot_compute_affine_map);
+        record_mandelbrot_compute_pipeline(command_buffer, i, &mandelbrot_compute_affine_maps[i]);
     }
     
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
@@ -172,8 +172,10 @@ result_t manage_mandelbrot_frames(const VkPhysicalDeviceProperties* physical_dev
     *out_mandelbrot_frame_compute_time = get_query_microseconds(timestamps[0], timestamps[1], physical_device_properties->limits.timestampPeriod);
     
     // Make sure the gpu is not rendering using the mandelbrot back frame
-    VkFence render_fence = in_flight_fences[mandelbrot_frame_index_to_render_frame_index[back_frame_index]];
-    vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX);
+    {
+        VkFence render_fence = in_flight_fences[mandelbrot_frame_index_to_render_frame_index[back_frame_index]];
+        vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX);
+    }
 
     VkCommandBuffer command_buffer = mandelbrot_command_buffers[back_frame_index];
     if (vkResetCommandBuffer(command_buffer, 0) != VK_SUCCESS) {
@@ -209,10 +211,10 @@ result_t manage_mandelbrot_frames(const VkPhysicalDeviceProperties* physical_dev
         record_mandelbrot_compute_pipeline_fragment_to_compute_transition(command_buffer, back_frame_index);
     }
 
-    mandelbrot_compute_affine_map = get_affine_map();
+    mandelbrot_compute_affine_maps[back_frame_index] = get_affine_map();
 
     update_mandelbrot_compute_pipeline(back_frame_index);
-    record_mandelbrot_compute_pipeline(command_buffer, back_frame_index, &mandelbrot_compute_affine_map);
+    record_mandelbrot_compute_pipeline(command_buffer, back_frame_index, &mandelbrot_compute_affine_maps[back_frame_index]);
     
     vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) back_frame_index + 1);
 
