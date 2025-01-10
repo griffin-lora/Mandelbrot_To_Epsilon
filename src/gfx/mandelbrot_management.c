@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <vk_mem_alloc.h>
+#include <vulkan/vulkan_core.h>
 
 static size_t front_frame_index = 0;
 
@@ -26,6 +27,8 @@ static VkQueue mandelbrot_queue;
 static VkCommandPool mandelbrot_command_pool;
 
 mat3s mandelbrot_compute_affine_map;
+
+static VkQueryPool mandelbrot_timestamp_query_pool;
 
 static result_t create_mandelbrot_image(size_t frame_index, uint32_t width, uint32_t height) {
     mandelbrot_dispatches[frame_index] = (mandelbrot_dispatch_t) { width / 8, height / 8 };
@@ -61,6 +64,14 @@ static void destroy_mandelbrot_image(size_t index) {
 result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffer, VkFence command_fence, uint32_t queue_family_index) {
     result_t result;
 
+    if (vkCreateQueryPool(device, &(VkQueryPoolCreateInfo) {
+        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .queryType = VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount = 2 * NUM_MANDELBROT_FRAMES_IN_FLIGHT
+    }, NULL, &mandelbrot_timestamp_query_pool) != VK_SUCCESS) {
+        return result_query_pool_create_failure;
+    }
+
     vkGetDeviceQueue(device, queue_family_index, 0, &mandelbrot_queue);
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
@@ -94,6 +105,11 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     }) != VK_SUCCESS) {
         return result_command_buffer_begin_failure;
+    }
+
+    for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
+        vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) i);
+        vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) i + 1);
     }
 
     mandelbrot_compute_affine_map = get_affine_map();
@@ -133,8 +149,10 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
     return result_success;
 }
 
-result_t manage_mandelbrot_frames() {
+result_t manage_mandelbrot_frames(const VkPhysicalDeviceProperties* physical_device_properties, microseconds_t* out_mandelbrot_frame_compute_time) {
     result_t result;
+
+    *out_mandelbrot_frame_compute_time = 0;
 
     {
         size_t back_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
@@ -147,6 +165,11 @@ result_t manage_mandelbrot_frames() {
     }
     front_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
     size_t back_frame_index = (front_frame_index + 1) % NUM_MANDELBROT_FRAMES_IN_FLIGHT;
+
+    uint64_t timestamps[2];
+    vkGetQueryPoolResults(device, mandelbrot_timestamp_query_pool, 2 * (uint32_t) back_frame_index, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+
+    *out_mandelbrot_frame_compute_time = get_query_microseconds(timestamps[0], timestamps[1], physical_device_properties->limits.timestampPeriod);
     
     // Make sure the gpu is not rendering using the mandelbrot back frame
     VkFence render_fence = in_flight_fences[mandelbrot_frame_index_to_render_frame_index[back_frame_index]];
@@ -162,6 +185,9 @@ result_t manage_mandelbrot_frames() {
     }) != VK_SUCCESS) {
         return result_command_buffer_begin_failure;
     }
+
+    vkCmdResetQueryPool(command_buffer, mandelbrot_timestamp_query_pool, 2 * (uint32_t) back_frame_index, 2);
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) back_frame_index);
 
     int width;
     int height;
@@ -187,6 +213,8 @@ result_t manage_mandelbrot_frames() {
 
     update_mandelbrot_compute_pipeline(back_frame_index);
     record_mandelbrot_compute_pipeline(command_buffer, back_frame_index, &mandelbrot_compute_affine_map);
+    
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mandelbrot_timestamp_query_pool, 2 * (uint32_t) back_frame_index + 1);
 
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
         return result_command_buffer_end_failure;
@@ -212,6 +240,8 @@ void term_mandelbrot_management(void) {
         vkDestroyFence(device, mandelbrot_fences[i], NULL);
         destroy_mandelbrot_image(i);
     }
+
+    vkDestroyQueryPool(device, mandelbrot_timestamp_query_pool, NULL);
 }
 
 size_t get_mandelbrot_front_frame_index(void) {

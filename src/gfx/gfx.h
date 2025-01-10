@@ -1,4 +1,5 @@
 #pragma once
+#include "chrono.h"
 #include "result.h"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -16,5 +17,5 @@ extern VkRenderPass frame_render_pass;
 extern VkFence in_flight_fences[NUM_FRAMES_IN_FLIGHT];
 
 result_t init_gfx(void);
-result_t draw_gfx();
+result_t draw_gfx(microseconds_t* out_frame_render_time, microseconds_t* out_mandelbrot_frame_compute_time);
 void term_gfx(void);

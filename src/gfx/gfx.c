@@ -33,6 +33,7 @@ GLFWwindow* window;
 VkDevice device;
 static VkQueue graphics_queue;
 static VkPhysicalDevice physical_device;
+static VkPhysicalDeviceProperties physical_device_properties;
 VmaAllocator allocator;
 static queue_family_indices_t queue_family_indices;
 VkSurfaceFormatKHR surface_format;
@@ -467,7 +468,6 @@ static result_t init_vk_core(void) {
         }
     }
 
-    VkPhysicalDeviceProperties physical_device_properties;
     vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
     printf("Loaded physical device \"%s\"\n", physical_device_properties.deviceName);
 
@@ -757,10 +757,10 @@ static void term_glfw_core(void) {
     glfwTerminate();
 }
 
-result_t draw_gfx() {
+result_t draw_gfx(microseconds_t* out_frame_render_time, microseconds_t* out_mandelbrot_frame_compute_time) {
     result_t result;
 
-    if ((result = manage_mandelbrot_frames()) != result_success) {
+    if ((result = manage_mandelbrot_frames(&physical_device_properties, out_mandelbrot_frame_compute_time)) != result_success) {
         return result;
     }
 
@@ -772,11 +772,7 @@ result_t draw_gfx() {
     uint64_t timestamps[2];
     vkGetQueryPoolResults(device, timestamp_query_pool, 2 * (uint32_t) frame_index, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
 
-    VkPhysicalDeviceProperties physical_device_properties;
-    vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
-
-    float frame_delta = (float) (timestamps[1] - timestamps[0]) * physical_device_properties.limits.timestampPeriod / 1000000000.0f;
-    printf("FPS: %f\n", 1.0f/frame_delta);
+    *out_frame_render_time = get_query_microseconds(timestamps[0], timestamps[1], physical_device_properties.limits.timestampPeriod);
 
     uint32_t image_index;
     {
