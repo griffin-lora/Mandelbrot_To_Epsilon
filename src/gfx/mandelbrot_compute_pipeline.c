@@ -100,6 +100,15 @@ void update_mandelbrot_compute_pipeline(size_t frame_index) {
     }, 0, NULL);
 }
 
+void record_mandelbrot_compute_pipeline_init_to_fragment_transition(VkCommandBuffer command_buffer, size_t frame_index) {
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &(VkImageMemoryBarrier) {
+        DEFAULT_VK_IMAGE_MEMORY_BARRIER,
+        .image = mandelbrot_color_images[frame_index],
+        .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+    });
+}
+
 void record_mandelbrot_compute_pipeline_init_to_compute_transition(VkCommandBuffer command_buffer, size_t frame_index) {
     vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &(VkImageMemoryBarrier) {
         DEFAULT_VK_IMAGE_MEMORY_BARRIER,

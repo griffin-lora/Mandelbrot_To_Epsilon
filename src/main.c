@@ -41,7 +41,7 @@ int main() {
         microseconds_t total_logic_time = logic_end - logic_start;
         delta = (float) total_logic_time/1000000.0f;
 
-        printf("FPS: %f, Logic time: %ldμs, Frame render time: %ldμs, Mandelbrot frame compute time: %ldμs\n", delta, logic_time, frame_render_time, mandelbrot_frame_compute_time);
+        // printf("FPS: %f, Logic time: %ldμs, Frame render time: %ldμs, Mandelbrot frame compute time: %ldμs\n", delta, logic_time, frame_render_time, mandelbrot_frame_compute_time);
     }
 
     term_gfx();

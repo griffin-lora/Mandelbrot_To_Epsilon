@@ -114,9 +114,14 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
         mandelbrot_compute_affine_maps[i] = get_affine_map();
     }
 
+    record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, front_frame_index);
+    record_mandelbrot_compute_pipeline(command_buffer, front_frame_index, &mandelbrot_compute_affine_maps[front_frame_index]);
+
     for (size_t i = 0; i < NUM_MANDELBROT_FRAMES_IN_FLIGHT; i++) {
-        record_mandelbrot_compute_pipeline_init_to_compute_transition(command_buffer, i);
-        record_mandelbrot_compute_pipeline(command_buffer, i, &mandelbrot_compute_affine_maps[i]);
+        if (i == front_frame_index) {
+            continue;
+        }
+        record_mandelbrot_compute_pipeline_init_to_fragment_transition(command_buffer, i);
     }
     
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {

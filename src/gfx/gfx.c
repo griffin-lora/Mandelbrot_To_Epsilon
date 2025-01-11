@@ -671,6 +671,7 @@ static result_t init_vk_core(void) {
         return result_command_buffer_begin_failure;
     }
 
+    vkCmdResetQueryPool(generic_command_buffer, timestamp_query_pool, 0, 2 * NUM_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < NUM_FRAMES_IN_FLIGHT; i++) {
         vkCmdWriteTimestamp(generic_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) i);
         vkCmdWriteTimestamp(generic_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestamp_query_pool, 2 * (uint32_t) i + 1);
