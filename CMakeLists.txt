@@ -11,7 +11,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 add_library(vma STATIC link/vk_mem_alloc.cpp)
-target_link_libraries(vma PRIVATE Vulkan::Vulkan)
 
 file(GLOB SRC CONFIGURE_DEPENDS "src/*.h" "src/*.c" "src/gfx/*.c" "src/gfx/*.h")
 add_executable(app ${SRC})
