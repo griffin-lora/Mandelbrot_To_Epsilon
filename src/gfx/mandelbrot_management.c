@@ -72,7 +72,7 @@ result_t init_mandelbrot_management(VkQueue queue, VkCommandBuffer command_buffe
         return result_query_pool_create_failure;
     }
 
-    vkGetDeviceQueue(device, queue_family_index, 1, &mandelbrot_queue);
+    vkGetDeviceQueue(device, queue_family_index, 0, &mandelbrot_queue);
 
     memset(mandelbrot_frame_index_to_render_frame_index, 0, sizeof(mandelbrot_frame_index_to_render_frame_index));
 
