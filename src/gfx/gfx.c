@@ -486,8 +486,8 @@ static result_t init_vk_core(void) {
             {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .queueFamilyIndex = queue_family_indices.graphics,
-                .queueCount = 2,
-                .pQueuePriorities = (float[2]) { 1.0f, 0.0f }
+                .queueCount = 1,
+                .pQueuePriorities = (float[1]) { 1.0f }
             }
         },
         .pEnabledFeatures = NULL,
